@@ -1,0 +1,7 @@
+"VertexLitGeneric"
+{
+	"$baseTexture" "models\Karasz/Bullet_Bill\npc006_fire_1"
+	"$alphatest" "1"
+	"$nocull" "1"
+	"$bumpmap" "models/Karasz/Bullet_Bill\phong"
+}
