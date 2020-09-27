@@ -1,0 +1,11 @@
+{
+	"title"		:	"Bullet Bill",
+	"type"		:	"Weapon",
+	"tags"		:	[ "comic", "fun" ],
+	"ignore"	:
+	[
+		"*.psd",
+		"*.vcproj",
+		"*.svn*"
+	]
+}
