@@ -20,10 +20,11 @@ SWEP.ViewModelFOV			= 70
 SWEP.ViewModelFlip			= false
 SWEP.ViewModel				= "models/weapons/v_models/c_bblauncher.mdl"
 SWEP.WorldModel				= "models/weapons/w_models/bblauncher.mdl"
+
 SWEP.ShowWorldModel			= true
 SWEP.Spawnable				= true
 SWEP.AdminOnly				= false
-SWEP.FiresUnderwater 		= false
+SWEP.FiresUnderwater 		        = false
 
 SWEP.Base 					= "weapon_tttbase"
 SWEP.Kind 					= WEAPON_EQUIP2
@@ -31,7 +32,7 @@ SWEP.CanBuy 				= { ROLE_TRAITOR }
 SWEP.AllowDrop 				= true
 SWEP.IsSilent 				= false
 SWEP.NoSights 				= true
-SWEP.AutoSpawnable 			= true
+SWEP.AutoSpawnable 			= false
 
 
 SWEP.EquipMenuData = {
@@ -61,7 +62,7 @@ SWEP.Primary.Cone				= 0.0125
 SWEP.ReloadTime 				= .1
 SWEP.SelectiveFire		= true
 SWEP.CanBeSilenced		= false
-SWEP.LimitedStock = false
+SWEP.LimitedStock               = true
 
 //SWEP.Secondary.IronFOV			= 65
 
@@ -83,6 +84,7 @@ SWEP.RunSightsPos = Vector(0, 0, 0)
 SWEP.RunSightsAng = Vector(0, 0, 0)
 tracking = false
 Defeated =false
+Avoid = true
 
 
 ---------------------------------------------------------
@@ -95,7 +97,7 @@ function SWEP:PrimaryAttack()
                 endpos = self.Owner:GetShootPos() + self.Owner:GetAimVector() * 150,
                 filter = function( ent ) if ( ent:GetClass() == "prop_physics" ) then return true end end
         } )
-
+        self.Weapon:SetSkin(1)
         self.Weapon:SetNextPrimaryFire( CurTime() + 0.2 )
 
         if(tr.Fraction < 1) then return end
@@ -117,6 +119,7 @@ function SWEP:PrimaryAttack()
                 bill:Spawn()
                 bill.Speed = 350
                 //bill.Tracking = tracking
+                bill.Avoidance = Avoid
                 local phys = bill:GetPhysicsObject()
                 if (phys:IsValid()) then
                         phys:SetVelocity( self.Owner:GetAimVector() * bill.Speed)
@@ -179,5 +182,4 @@ function SWEP:SecondaryAttack()
 
         
 end
-
 

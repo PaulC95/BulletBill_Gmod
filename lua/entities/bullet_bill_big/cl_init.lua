@@ -3,7 +3,7 @@
 include('shared.lua')
 
 local matLight          = Material( "sprites/light_ignorez" )
-
+Kill = false
 /*---------------------------------------------------------
    Name: Initialize
 ---------------------------------------------------------*/
@@ -36,11 +36,12 @@ end
    Name: Think
 ---------------------------------------------------------*/
 function ENT:Think()
-        
+
         local Gravity = Vector( 0, 0, -10 )
         local Velocity = self:GetVelocity()
         
-        if (self.Defeated) then self.Emmiter = nil end
+        if ( Kill )then self.Emitter = nil
+        elseif(!Kill) then self.Emitter = ParticleEmitter( self.Entity:GetPos() ) end
 
         if ( self.Emitter ) then
         
@@ -108,7 +109,8 @@ function ENT:Think()
 
         
         end
-                /*
+                
+        /*
         local dlight = DynamicLight( self.Entity:EntIndex() )
         if ( dlight ) then
                 dlight.Pos = self.Entity:GetPos()
@@ -122,6 +124,10 @@ function ENT:Think()
         end */
   
 end
+
+net.Receive("effectkill", function() 
+        Kill = true
+end )
 
 g_RPGGlares = {}
 
@@ -192,3 +198,5 @@ local function RenderGrenadeGlares()
 end
 
 hook.Add( "PostDrawTranslucent", "RenderRPGGlares", RenderGrenadeGlares )
+
+

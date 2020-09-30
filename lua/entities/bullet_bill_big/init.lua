@@ -17,6 +17,13 @@ nexttargetcheck = CurTime() + 1
 ---------------------------------------------------------*/
 function ENT:Initialize()
 
+        self.Avoidance = false            //do we want bill to avoid colliding with the world while he searches for targets
+        self.Circle = false                     //do we want bill to go around in circles while looking for players?     
+        self.HadTarget = true                  //if false bill will not do above until after it has aquired first target
+
+        
+        if SERVER then util.AddNetworkString("effectkill") end
+
         self.Entity:SetModel("models/weapons/w_models/w_rocket.mdl")
         self.Entity:SetModelScale( self.Entity:GetModelScale()*1,0)
         self.Entity:PhysicsInit( SOLID_VPHYSICS )
@@ -47,7 +54,14 @@ function ENT:Initialize()
         self.Sound:Play()
 
         self:StartMotionController()
+
+        if SERVER then util.AddNetworkString("effectkill") end
         
+        if SERVER then
+                net.Start("effectkill")
+                net.WriteBool(True)
+                net.Broadcast()
+        end
         
 end
 
@@ -70,6 +84,11 @@ function ENT:Think()
         if self.Exploded then return end
 
         self:Track()
+
+        
+        local speed = self.Entity:GetVelocity():Length()
+
+        if speed< (self.Speed*0.5) then self.Entity:GetPhysicsObject():SetVelocityInstantaneous(self.Entity:GetVelocity():GetNormal()*self.Speed) end
 
         self:NextThink(CurTime())
 
@@ -112,6 +131,7 @@ function ENT:PhysicsSimulate( phys, deltatime )
         local vAngular = Vector(0,0,0)
         local vLinear = (self.Entity:GetForward():Angle():Right() * fSin) + (self.Entity:GetForward():Angle():Up() * fCos)
         vLinear = vLinear * deltatime * 1.001
+
 
         return vAngular, vLinear, SIM_GLOBAL_FORCE
 
@@ -156,8 +176,11 @@ function ENT:PhysicsCollide( data, physobj )
                 self.Entity:EmitSound("Small_Bill.Defeated")
                 self.Exploded = true
                 self.Defeated = true
-                self.Emitter = nil
-
+                if SERVER then
+                        net.Start("effectkill")
+                        net.WriteBool(True)
+                        net.Broadcast()
+                end
                 local phys = self.Entity:GetPhysicsObject()
                 if phys:IsValid() then 
                         phys:SetMass(20)
@@ -198,7 +221,7 @@ end
 
 // Gets the nearest player relative to pos and within 90 degrees of fwd vector
 
-function GetNearestPlayerInfront(pos,fwd) 
+function ENT:GetNearestPlayerInfront(pos,fwd) 
 
         local dist = 200000
         local ply = NULL
@@ -219,22 +242,22 @@ function GetNearestPlayerInfront(pos,fwd)
                 ////print("mypos: " .. pos.x .. "," .. pos.y  .. "," .. pos.z .. "\ntarget player: " .. v:Nick() .. "\ntarget pos: " .. v:GetPos().x .. "," .. v:GetPos().y  .. "\ntarget vector:" .. targetvect.x .. "," .. targetvect.y .. "," .. targetvect.z .. "\nangle between is ".. tarangle .. "\n")
                 
                 //check if that player is closer than the last one we check and also not behind us and also not behind a wall and is alive!
-                /*local tr = util.TraceLine( {
-                        start = pos,
+                
+                local tr = util.TraceLine( {
+                        start = pos + nfwd*30,   //have to start the trace outside our body otherwise hitent is just us, could also filter out us but this is easier
                         endpos = v:GetPos()
-                        filter = function(ent) if !(ent == self.Entity) then return true end end
                 })
-                */
+                
+                //print(tr.Entity:IsWorld())
 
-
-                if (newdist < dist && (tarangle < 90)) && v:Alive() then
+                if (newdist < dist && (tarangle < 90)) && v:Alive() && !v:IsSpec() && !tr.Entity:IsWorld() then
                         ply = v
                         dist = newdist
                 end
         end
 
-        if(ply.IsPlayer()) then //print("\nplayer found: " .. ply:Nick() .. " at a distance of: " .. math.sqrt(dist) .. " and an angle of: " .. tarangle .. "\n")
-        else ////print ("no players found")
+        if(ply.IsPlayer()) then self.HadTarget = true //print("\nplayer found: " .. ply:Nick() .. " at a distance of: " .. math.sqrt(dist) .. " and an angle of: " .. tarangle .. "\n")
+        else //print ("no players found")
         end 
 
         return ply
@@ -247,8 +270,14 @@ function ENT:Track()
 
         ////print("my forward vector is: " .. fwd.x .. "," .. fwd.y .. "," .. fwd.z .. "\n")
 
-        target = GetNearestPlayerInfront(self:GetPos(),fwd)
+        target = self:GetNearestPlayerInfront(self:GetPos(),fwd)
 
+        local tr = util.TraceLine( {
+                start = self.Entity:GetPos() + Vector(0,1,0)*30,
+                endpos = self.Entity:GetPos() + Vector(0,0,-1)*10000
+        })
+        
+        local height = self:GetPos().z - tr.HitPos.z
         
 
         if (target:IsPlayer() && (!self:OnTarget(target))) then
@@ -263,7 +292,7 @@ function ENT:Track()
 
                 //we want to aim at the eyes of our victim
                 
-                local aimpoint = target:EyePos()
+                local aimpoint = target:EyePos() - Vector(0,0,25)
                 local targetvect = aimpoint - self.Entity:GetPos()
                 local targetang = targetvect:Angle()
                 local ntarget = targetvect:GetNormalized()
@@ -324,15 +353,66 @@ function ENT:Track()
 
                 self.Entity:GetPhysicsObject():SetVelocityInstantaneous(newfwd*self.Speed)
 
+
          
         elseif (self:OnTarget(target)) 
                 then
 
                 //print( "I'm on target!\n" )
 
-        else 
+        else //this is where we want to do our flying around without actively tracking players
                 //print("No target found!") 
-        
+
+                local currentang = fwd:Angle()
+                //print(self.HadTarget)
+                
+                if(self.Avoidance) then
+
+                        if(height && self.HadTarget) then
+                                //currentang:RotateAroundAxis(currentang:Up(),2)
+                        
+                               
+                                local dy = math.abs(math.AngleDifference(Angle(0,0,0).x, currentang.x))
+                                //print(currentang)
+                                //print(dy)
+                                //print(height)
+                                //print(levelout)
+                                //if (math.abs(height-50) < 5) then levelout = true end
+
+                                if ((height - 50 < 5) && dy <2) then levelout = true
+                                elseif (height < 100) and (currentang.x > 20) then 
+                                        //print("pullup")
+                                        currentang:RotateAroundAxis(currentang:Right(),2) levelout = false
+                                elseif height < 50 then 
+                                        //print("pullup")
+                                        currentang:RotateAroundAxis(currentang:Right(),1.5) levelout = false
+                                elseif (currentang.x > 90) then 
+                                        //print("sharp")
+                                        currentang:RotateAroundAxis(currentang:Right(),-1) levelout = false
+                                elseif (currentang.x < 60 and dy < 20 )  then
+                                        //print"smooth" 
+                                        currentang:RotateAroundAxis(currentang:Right(),-0.5) levelout = false
+                                
+                                end
+
+                                if (dy > 80) then currentang.x = 280 end
+
+                                if (levelout) then currentang = Angle(0,currentang.y,currentang.z) end
+
+                                self.Entity:SetAngles(currentang)
+                                
+                                //self.Entity:GetPhysicsObject():RotateAroundAxis(normal,math.max(tarangle/10,1))
+                                
+                                
+                                        
+                                local newfwd = currentang:Forward()
+
+                                //local newvelocity = (newfwd * 10)
+                                ////print("my new velocity angle is ".. newvelocity.x .. "," .. newvelocity.y .. "," .. newvelocity.z .. "\n")
+                                
+                                self.Entity:GetPhysicsObject():SetVelocityInstantaneous(newfwd*self.Speed)
+                        end
+                end 
         end        
 
         self.Entity:NextThink(CurTime())

@@ -17,6 +17,11 @@ nexttargetcheck = CurTime() + 1
 ---------------------------------------------------------*/
 function ENT:Initialize()
 
+        self.Avoidance = true            //do we want bill to avoid colliding with the world while he searches for targets
+        self.Circle = false                     //do we want bill to go around in circles while looking for players?     
+        self.HadTarget = true                  //if false bill will not do above until after it has aquired first target
+
+                
         self.Entity:SetModel("models/weapons/w_models/w_rocket.mdl")
         self.Entity:SetModelScale( self.Entity:GetModelScale()*1,0)
         self.Entity:PhysicsInit( SOLID_VPHYSICS )
@@ -291,7 +296,12 @@ function ENT:Track()
 
         target = GetNearestPlayerInfront(self:GetPos(),fwd)
 
+        local tr = util.TraceLine( {
+                start = self.Entity:GetPos() + Vector(0,1,0)*30,
+                endpos = self.Entity:GetPos() + Vector(0,0,-1)*10000
+        })
         
+        local height = self:GetPos().z - tr.HitPos.z
 
         if ((target:IsPlayer() or target:IsNPC()) && (!self:OnTarget(target))) then
                 //print("My target is " .. target:GetName() .. "\nTracking target!\n" )
@@ -374,6 +384,58 @@ function ENT:Track()
 
         else 
                 //print("No target found!") 
+                local currentang = fwd:Angle()
+                //print(self.HadTarget)
+                
+                if(self.Avoidance) then
+
+
+                        if(height && self.HadTarget) then
+                                print("lalalalala")
+                                //currentang:RotateAroundAxis(currentang:Up(),2)
+                        
+                               
+                                local dy = math.abs(math.AngleDifference(Angle(0,0,0).x, currentang.x))
+                                //print(currentang)
+                                //print(dy)
+                                //print(height)
+                                //print(levelout)
+                                //if (math.abs(height-50) < 5) then levelout = true end
+
+                                if ((height - 50 < 5) && dy <2) then levelout = true
+                                elseif (height < 100) and (currentang.x > 20) then 
+                                        //print("pullup")
+                                        currentang:RotateAroundAxis(currentang:Right(),2) levelout = false
+                                elseif height < 50 then 
+                                        //print("pullup")
+                                        currentang:RotateAroundAxis(currentang:Right(),1.5) levelout = false
+                                elseif (currentang.x > 90) then 
+                                        //print("sharp")
+                                        currentang:RotateAroundAxis(currentang:Right(),-1) levelout = false
+                                elseif (currentang.x < 60 and dy < 20 )  then
+                                        //print"smooth" 
+                                        currentang:RotateAroundAxis(currentang:Right(),-0.5) levelout = false
+                                
+                                end
+
+                                if (dy > 80) then currentang.x = 280 end
+
+                                if (levelout) then currentang = Angle(0,currentang.y,currentang.z) end
+
+                                self.Entity:SetAngles(currentang)
+                                
+                                //self.Entity:GetPhysicsObject():RotateAroundAxis(normal,math.max(tarangle/10,1))
+                                
+                                
+                                        
+                                local newfwd = currentang:Forward()
+
+                                //local newvelocity = (newfwd * 10)
+                                ////print("my new velocity angle is ".. newvelocity.x .. "," .. newvelocity.y .. "," .. newvelocity.z .. "\n")
+                                
+                                self.Entity:GetPhysicsObject():SetVelocityInstantaneous(newfwd*self.Speed)
+                        end
+                end 
         
         end        
 
