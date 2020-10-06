@@ -98,13 +98,12 @@ function SWEP:PrimaryAttack()
                 filter = function( ent ) if ( ent:GetClass() == "prop_physics" ) then return true end end
         } )
         self.Weapon:SetSkin(1)
-        self.Weapon:SetNextPrimaryFire( CurTime() + 0.2 )
 
         if(tr.Fraction < 1) then return end
         if not self:CanPrimaryAttack() then return end
         if ( self.Weapon:Clip1() < 0 ) then return end
         self.Weapon:EmitSound("Weapon_Bill_Launcher.Single")
-        self.Weapon:SetNextPrimaryFire(CurTime() + 1)
+        self.Weapon:SetNextPrimaryFire(CurTime() + 0.2)
         self.Weapon:SetNextSecondaryFire(CurTime() + 1)
         self.Weapon:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
         self.Weapon:TakePrimaryAmmo(1)
@@ -117,7 +116,7 @@ function SWEP:PrimaryAttack()
                 bill.Creator = self.Owner
                 bill.FlyAngle = self.Owner:GetAimVector():Angle()
                 bill:Spawn()
-                bill.Speed = 350
+                bill.Speed = 450
                 //bill.Tracking = tracking
                 bill.Avoidance = Avoid
                 local phys = bill:GetPhysicsObject()
@@ -151,16 +150,16 @@ function SWEP:SecondaryAttack()
                 endpos = self.Owner:GetShootPos() + self.Owner:GetAimVector() * 150,
                 filter = function( ent ) if ( ent:GetClass() == "prop_physics" ) then return true end end
         } )
-        self.Weapon:SetNextPrimaryFire( CurTime() + 0.2 )
+        self.Weapon:SetNextPrimaryFire( CurTime() )
 
         if(tr.Fraction < 1) then return end
         if not self:CanPrimaryAttack() then return end
-        if ( self.Weapon:Clip1() < 4 ) then print("not enough ammo")return end
+        if ( self.Weapon:Clip1() < 2 ) then print("not enough ammo")return end
         self.Weapon:EmitSound("Weapon_Bill_Launcher.Single")
         self.Weapon:SetNextPrimaryFire(CurTime() + 1)
         self.Weapon:SetNextSecondaryFire(CurTime() + 1)
         self.Weapon:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
-        self.Weapon:TakePrimaryAmmo(4)
+        self.Weapon:TakePrimaryAmmo(2)
         if ( SERVER ) then
 
 
@@ -169,7 +168,7 @@ function SWEP:SecondaryAttack()
                 bill.Creator = self.Owner
                 bill.FlyAngle = self.Owner:GetAimVector():Angle()
                 bill:Spawn()
-                bill.Speed = 150
+                bill.Speed = 250
                 local phys = bill:GetPhysicsObject()
                 if (phys:IsValid()) then
                         phys:SetVelocity( self.Owner:GetAimVector() * bill.Speed)

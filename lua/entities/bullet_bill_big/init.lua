@@ -30,7 +30,9 @@ function ENT:Initialize()
         self.Entity:SetMoveType(  MOVETYPE_VPHYSICS )   
         self.Entity:SetSolid( SOLID_VPHYSICS )
         self.Entity:SetLagCompensated(true)
-        self.Entity:SetHealth(1000)
+        self.Entity:SetHealth(300)
+
+        self.Target = nil 
         
         // Wake the physics object up. Its time to have fun!
         local phys = self.Entity:GetPhysicsObject()
@@ -46,7 +48,7 @@ function ENT:Initialize()
 
         // set hit counter to 0
         self.HitCount = 0
-        self.Target = NULL
+        //self.Target = NULL
         self.Entity:EmitSound("loop_low")
 
         self.Sound = CreateSound( self.Entity, fly_sound )
@@ -85,10 +87,17 @@ function ENT:Think()
 
         self:Track()
 
-        
         local speed = self.Entity:GetVelocity():Length()
 
-        if speed< (self.Speed*0.5) then self.Entity:GetPhysicsObject():SetVelocityInstantaneous(self.Entity:GetVelocity():GetNormal()*self.Speed) end
+        //if speed< (self.Speed*0.5 and self.Target) then   self.Entity:GetPhysicsObject():SetVelocityInstantaneous(self.Entity:GetVelocity():GetNormal()*self.Speed) end
+
+        if (self.Target == nil ) then 
+                print("no target, going slow")
+                self.Entity:GetPhysicsObject():SetVelocityInstantaneous(self.Entity:GetVelocity():GetNormal()*self.Speed*0.8) 
+        
+        end
+
+        print(self.Target)
 
         self:NextThink(CurTime())
 
@@ -223,7 +232,7 @@ end
 
 function ENT:GetNearestPlayerInfront(pos,fwd) 
 
-        local dist = 200000
+        local dist = 300000
         local ply = NULL
         local targetvect = NULL
 
@@ -271,6 +280,7 @@ function ENT:Track()
         ////print("my forward vector is: " .. fwd.x .. "," .. fwd.y .. "," .. fwd.z .. "\n")
 
         target = self:GetNearestPlayerInfront(self:GetPos(),fwd)
+        
 
         local tr = util.TraceLine( {
                 start = self.Entity:GetPos() + Vector(0,1,0)*30,
@@ -284,6 +294,8 @@ function ENT:Track()
                 ////print("My target is " .. target:GetName() .. "\nTracking target!\n" )
 
                 //remember our speed and velocity
+
+                self.Target = target
 
                 local currentvelocity = self.Entity:GetVelocity()
                 local speed = currentvelocity:Length()
@@ -327,15 +339,20 @@ function ENT:Track()
                 
                 //rotate left or right
                 if math.abs(dx) < 5 then   
-                elseif normal.z > 0 then currentang:RotateAroundAxis(currentang:Up(),1)
-                elseif normal.z <0 then currentang:RotateAroundAxis(currentang:Up(),-1) end
+                elseif normal.z > 0 then currentang:RotateAroundAxis(currentang:Up(),1.2)
+                elseif normal.z <0 then currentang:RotateAroundAxis(currentang:Up(),-1.2) end
 
                 //rotate up or down
-                if math.abs(dy) < 5 && targetvect:Length() > 100 then
+                if math.abs(dy) < 5  then
 
                 elseif vchange.z < 0 then currentang:RotateAroundAxis(currentang:Right(),-0.5)
-                elseif vchange.z > 0 then currentang:RotateAroundAxis(currentang:Right(),0.5) 
+                elseif vchange.z > 0 then currentang:RotateAroundAxis(currentang:Right(),1.5) 
                 
+                end
+
+                if height < 60  && currentang.y < 180 then 
+                        //print("pullup")
+                        currentang:RotateAroundAxis(currentang:Right(),1) 
                 end
                 
                 
@@ -357,7 +374,7 @@ function ENT:Track()
          
         elseif (self:OnTarget(target)) 
                 then
-
+                        self.Target = target
                 //print( "I'm on target!\n" )
 
         else //this is where we want to do our flying around without actively tracking players
@@ -365,7 +382,7 @@ function ENT:Track()
 
                 local currentang = fwd:Angle()
                 //print(self.HadTarget)
-                
+                self.Target = nil
                 if(self.Avoidance) then
 
                         if(height && self.HadTarget) then
@@ -380,6 +397,7 @@ function ENT:Track()
                                 //if (math.abs(height-50) < 5) then levelout = true end
 
                                 if ((height - 50 < 5) && dy <2) then levelout = true
+
                                 elseif (height < 100) and (currentang.x > 20) then 
                                         //print("pullup")
                                         currentang:RotateAroundAxis(currentang:Right(),2) levelout = false
