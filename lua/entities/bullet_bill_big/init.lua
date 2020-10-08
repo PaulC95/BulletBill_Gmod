@@ -92,12 +92,12 @@ function ENT:Think()
         //if speed< (self.Speed*0.5 and self.Target) then   self.Entity:GetPhysicsObject():SetVelocityInstantaneous(self.Entity:GetVelocity():GetNormal()*self.Speed) end
 
         if (self.Target == nil ) then 
-                print("no target, going slow")
+                //print("no target, going slow")
                 self.Entity:GetPhysicsObject():SetVelocityInstantaneous(self.Entity:GetVelocity():GetNormal()*self.Speed*0.8) 
         
         end
 
-        print(self.Target)
+        //print(self.Target)
 
         self:NextThink(CurTime())
 

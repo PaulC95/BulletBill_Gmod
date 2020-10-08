@@ -17,10 +17,11 @@ local HitMax = 6 //the amount of times we can collide with a player or prop befo
 function ENT:Initialize()
 
         self.Entity:SetModel("models/weapons/w_models/w_rocket.mdl")
-        self.Entity:SetModelScale( self.Entity:GetModelScale()*.25,0)
         self.Entity:PhysicsInit( SOLID_VPHYSICS )
         self.Entity:SetMoveType(  MOVETYPE_VPHYSICS )   
         self.Entity:SetSolid( SOLID_VPHYSICS )
+        self.Entity:SetModelScale( self.Entity:GetModelScale()*.25,0)
+        self.Entity:Activate()
         self.Entity:SetLagCompensated(true)
         self.Entity:SetHealth(80)
         

@@ -102,7 +102,6 @@ function SWEP:PrimaryAttack()
         if not self:CanPrimaryAttack() then return end
         if ( self.Weapon:Clip1() < 0 ) then return end
         self.Weapon:EmitSound("Weapon_Bill_Launcher.Single")
-        self.Weapon:SetNextPrimaryFire(CurTime() + 1)
         self.Weapon:SetNextSecondaryFire(CurTime() + 1)
         self.Weapon:SendWeaponAnim( ACT_VM_PRIMARYATTACK )
         //self.Weapon:TakePrimaryAmmo(1)

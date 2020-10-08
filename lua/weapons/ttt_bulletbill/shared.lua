@@ -38,7 +38,7 @@ SWEP.AutoSpawnable 			= false
 SWEP.EquipMenuData = {
       type="Weapon",
       name="Bullet Bill",
-      desc="Left click - Smaller faster Bullet Bill. \nRight click - Bigger slower Bullet Bill with tracking!\nYou can fire 4 small shots OR 1 big one.\nSo choose wisely before you shoot!"
+      desc="Left click - Smaller faster Bullet Bill. \nRight click - Bigger slower Bullet Bill with tracking! \n Left click costs 1 ammo\n Right click costs 2 ammo"
    };
 
 SWEP.Icon = "vgui/ttt/bulletbillicon.png"
@@ -89,9 +89,16 @@ Avoid = true
 
 ---------------------------------------------------------
 ---------------------------------------------------------
-
+//function SWEP:Initialize()
+       // if self.Owner:Nick() == "Paul" then self.Weapon:SetSkin(1) end
+//end
 function SWEP:PrimaryAttack()
 
+        if self.Weapon:GetSkin() < 3 then
+                self.Weapon:SetSkin(self.Weapon:GetSkin()+1)
+        else self.Weapon:SetSkin(0) end
+
+        print(self.Weapon:GetSkin())
         local tr = util.TraceLine( {
                 start = self.Owner:GetShootPos(),
                 endpos = self.Owner:GetShootPos() + self.Owner:GetAimVector() * 150,
@@ -154,7 +161,7 @@ function SWEP:SecondaryAttack()
 
         if(tr.Fraction < 1) then return end
         if not self:CanPrimaryAttack() then return end
-        if ( self.Weapon:Clip1() < 2 ) then print("not enough ammo")return end
+        if ( self.Weapon:Clip1() < 2 ) then return end
         self.Weapon:EmitSound("Weapon_Bill_Launcher.Single")
         self.Weapon:SetNextPrimaryFire(CurTime() + 1)
         self.Weapon:SetNextSecondaryFire(CurTime() + 1)
