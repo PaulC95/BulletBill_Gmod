@@ -114,13 +114,13 @@ function ENT:Explode()
 
         local explosion = ents.Create( "env_explosion" )
 		explosion:SetKeyValue( "spawnflags", 144 )
-		explosion:SetKeyValue( "iMagnitude", 60 )
+		explosion:SetKeyValue( "iMagnitude", 0 )
 		explosion:SetKeyValue( "iRadiusOverride", 200 )
 		explosion:SetPos(self:GetPos()) // Placing the explosion where we are
 		explosion:Spawn( ) // Spawning it
 		explosion:Fire("explode","",0)
-		self.Entity:Remove()
 
+                util.BlastDamage(self.Entity, self.Creator, self:GetPos(), 200, 60 )
         self.Entity:Remove()
 
 end
