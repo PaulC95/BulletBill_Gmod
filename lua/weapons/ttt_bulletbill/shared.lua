@@ -63,7 +63,6 @@ SWEP.ReloadTime 				= .1
 SWEP.SelectiveFire		= true
 SWEP.CanBeSilenced		= false
 SWEP.LimitedStock               = true
-
 //SWEP.Secondary.IronFOV			= 65
 
 SWEP.data 				= {}

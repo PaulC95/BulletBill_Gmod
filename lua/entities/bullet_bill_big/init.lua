@@ -10,7 +10,9 @@ local fly_sound = Sound("fly.big")
 local fly_ramp = Sound("fly.ramp")
 util.PrecacheModel("models/weapons/w_models/w_rocket.mdl")
 local HitMax = 10 //the amount of times we can collide with a player or prop before exploding
-nexttargetcheck = CurTime() + 1
+
+nextupdate = CurTime() + 1
+nextscan = CurTime() + 1
 
 /*---------------------------------------------------------
    Initialize
@@ -32,6 +34,7 @@ function ENT:Initialize()
         self.Entity:SetLagCompensated(true)
         self.Entity:SetHealth(300)
 
+        //print(self.Entity:GetCollisionGroup())
         self.Target = nil 
         
         // Wake the physics object up. Its time to have fun!
@@ -85,19 +88,24 @@ function ENT:Think()
        
         if self.Exploded then return end
 
-        self:Track()
+        if CurTime() > nextupdate then
 
-        local speed = self.Entity:GetVelocity():Length()
+                self:Track()
 
-        //if speed< (self.Speed*0.5 and self.Target) then   self.Entity:GetPhysicsObject():SetVelocityInstantaneous(self.Entity:GetVelocity():GetNormal()*self.Speed) end
+                local speed = self.Entity:GetVelocity():Length()
 
-        if (self.Target == nil ) then 
-                //print("no target, going slow")
-                self.Entity:GetPhysicsObject():SetVelocityInstantaneous(self.Entity:GetVelocity():GetNormal()*self.Speed*0.8) 
-        
+                //if speed< (self.Speed*0.5 and self.Target) then   self.Entity:GetPhysicsObject():SetVelocityInstantaneous(self.Entity:GetVelocity():GetNormal()*self.Speed) end
+
+                if (self.Target == nil ) then 
+                        //print("no target, going slow")
+                        self.Entity:GetPhysicsObject():SetVelocityInstantaneous(self.Entity:GetVelocity():GetNormal()*self.Speed*0.6) 
+                
+                end
+
+                //print(self.Target)
+
+                nextupdate = CurTime() + 0.05
         end
-
-        //print(self.Target)
 
         self:NextThink(CurTime())
 
@@ -181,7 +189,7 @@ function ENT:PhysicsCollide( data, physobj )
             if ( ColVector.z >=4 && (ply:GetVelocity().z < 0 or ColVector:Dot(self.Entity:GetForward()) < 0)) then
                 //self.Entity.Emitter = nil
                 //print("Player is on top of the collision\n")
-                pushvel = Vector(0,0,500)
+                pushvel = Vector(0,0,400)
                 self.Entity:EmitSound("Small_Bill.Defeated")
                 self.Exploded = true
                 self.Defeated = true
@@ -238,6 +246,8 @@ function ENT:GetNearestPlayerInfront(pos,fwd)
 
         for _, v in pairs( player.GetAll() ) do
 
+                if (v:Alive() && !v:IsSpec()) then
+
                 //find distance to a player
                 local newdist = pos:DistToSqr( v:GetPos() )
 
@@ -252,6 +262,8 @@ function ENT:GetNearestPlayerInfront(pos,fwd)
                 
                 //check if that player is closer than the last one we check and also not behind us and also not behind a wall and is alive!
                 
+                
+
                 local tr = util.TraceLine( {
                         start = pos + nfwd*30,   //have to start the trace outside our body otherwise hitent is just us, could also filter out us but this is easier
                         endpos = v:GetPos()
@@ -259,15 +271,19 @@ function ENT:GetNearestPlayerInfront(pos,fwd)
                 
                 //print(tr.Entity:IsWorld())
 
-                if (newdist < dist && (tarangle < 90)) && v:Alive() && !v:IsSpec() && !tr.Entity:IsWorld() then
+                if (newdist < dist && (tarangle < 90)) && !tr.Entity:IsWorld() then
                         ply = v
                         dist = newdist
                 end
+                
+
+        end
         end
 
         if(ply.IsPlayer()) then self.HadTarget = true //print("\nplayer found: " .. ply:Nick() .. " at a distance of: " .. math.sqrt(dist) .. " and an angle of: " .. tarangle .. "\n")
         else //print ("no players found")
         end 
+        nextscan = CurTime() + 1
 
         return ply
 end
@@ -279,7 +295,11 @@ function ENT:Track()
 
         ////print("my forward vector is: " .. fwd.x .. "," .. fwd.y .. "," .. fwd.z .. "\n")
 
-        target = self:GetNearestPlayerInfront(self:GetPos(),fwd)
+        
+        if CurTime() > nextscan then
+                target = self:GetNearestPlayerInfront(self:GetPos(),fwd)
+                //print("Scanning")
+        end
         
 
         local tr = util.TraceLine( {
@@ -304,7 +324,7 @@ function ENT:Track()
 
                 //we want to aim at the eyes of our victim
                 
-                local aimpoint = target:EyePos() - Vector(0,0,25)
+                local aimpoint = target:EyePos() - Vector(0,0,30)
                 local targetvect = aimpoint - self.Entity:GetPos()
                 local targetang = targetvect:Angle()
                 local ntarget = targetvect:GetNormalized()
@@ -339,20 +359,23 @@ function ENT:Track()
                 
                 //rotate left or right
                 if math.abs(dx) < 5 then   
-                elseif normal.z > 0 then currentang:RotateAroundAxis(currentang:Up(),1.2)
-                elseif normal.z <0 then currentang:RotateAroundAxis(currentang:Up(),-1.2) end
-
+                elseif normal.z > 0 then currentang:RotateAroundAxis(currentang:Up(),4)
+                elseif normal.z <0 then currentang:RotateAroundAxis(currentang:Up(),-4) end
+                //print(dy)
                 //rotate up or down
                 if math.abs(dy) < 5  then
-
-                elseif vchange.z < 0 then currentang:RotateAroundAxis(currentang:Right(),-0.5)
-                elseif vchange.z > 0 then currentang:RotateAroundAxis(currentang:Right(),1.5) 
-                
+                        //down
+                elseif vchange.z < 0 then currentang:RotateAroundAxis(currentang:Right(),-2)
+                        //up
+                elseif vchange.z > 0 then currentang:RotateAroundAxis(currentang:Right(),3) 
+                        
                 end
 
-                if height < 60  && currentang.y < 180 then 
+                //print(height)
+                //print(currentang.x)
+                if height < 40  && currentang.x > 0 then 
                         //print("pullup")
-                        currentang:RotateAroundAxis(currentang:Right(),1) 
+                        currentang:RotateAroundAxis(currentang:Right(),5) 
                 end
                 
                 
@@ -445,7 +468,7 @@ function ENT:OnTarget(target)
                 start = self.Entity:GetPos() + fwd*20 ,
                 endpos = self.Entity:GetPos() + fwd*10000
         })
-        ////print(tr.Entity)
+        //print(tr.Entity)
 
         if ((self.target) && (tr.Entity == target)) then return true
                 else return false end
